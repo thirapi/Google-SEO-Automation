@@ -44,7 +44,7 @@ export default function Home() {
           </FeatureCard>
         </div>
 
-        <div className="max-w-6xl mx-auto mt-8">
+        {/* <div className="max-w-6xl mx-auto mt-8">
             <Card className="hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-border/50 flex flex-col">
                 <CardHeader>
                     <CardTitle>SEO Dashboard</CardTitle>
@@ -53,7 +53,7 @@ export default function Home() {
                     <SeoDashboard />
                 </CardContent>
             </Card>
-        </div>
+        </div> */}
 
         <footer className="text-center mt-20 text-muted-foreground">
           <p>Built with Next.js, ShadCN/UI, and Tailwind CSS.</p>

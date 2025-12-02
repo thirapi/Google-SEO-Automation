@@ -1,29 +1,24 @@
 import { IGoogleSearchConsoleService } from "@/lib/application/services/google-search-console.service.interface";
-import { JWT } from "google-auth-library";
+import { google } from "googleapis";
 
 export class GoogleSearchConsoleService implements IGoogleSearchConsoleService {
-  private jwtClient: JWT;
+  private oauth2Client: any;
 
   constructor() {
-    const email = process.env.GOOGLE_SERVICE_CLIENT_EMAIL;
-    const key = process.env.GOOGLE_SERVICE_PRIVATE_KEY?.replace(/\\n/g, "\n");
-    const scopes = (process.env.GOOGLE_GSC_SCOPES ?? "https://www.googleapis.com/auth/webmasters")
-      .split(" ")
-      .filter(Boolean);
-
-    if (!email || !key) {
-      throw new Error("Missing Google Service Account credentials in env");
-    }
-
-    this.jwtClient = new JWT({ email, key, scopes });
+    this.oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI
+    );
+    this.oauth2Client.setCredentials({
+      refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+    });
   }
 
   private async getAccessToken(): Promise<string> {
-    const tokenResponse = await this.jwtClient.authorize();
-    if (!tokenResponse.access_token) {
-      throw new Error("Failed to get access token for GSC");
-    }
-    return tokenResponse.access_token;
+    const { token } = await this.oauth2Client.getAccessToken();
+    if (!token) throw new Error("Failed to get access token for Site Verification");
+    return token;
   }
 
   async registerDomain(siteUrl: string): Promise<void> {
@@ -68,28 +63,28 @@ export class GoogleSearchConsoleService implements IGoogleSearchConsoleService {
     console.log(`Sitemap submitted: ${feedUrl}`);
   }
 
-  async getSeoData(siteUrl: string, startDate: string, endDate: string): Promise<any> {
-    const accessToken = await this.getAccessToken();
+  // async getSeoData(siteUrl: string, startDate: string, endDate: string): Promise<any> {
+  //   const accessToken = await this.getAccessToken();
 
-    const res = await fetch(`https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        startDate,
-        endDate,
-        dimensions: ["query"],
-        searchType: "web",
-      }),
-    });
+  //   const res = await fetch(`https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`, {
+  //     method: "POST",
+  //     headers: {
+  //       Authorization: `Bearer ${accessToken}`,
+  //       "Content-Type": "application/json",
+  //     },
+  //     body: JSON.stringify({
+  //       startDate,
+  //       endDate,
+  //       dimensions: ["query"],
+  //       searchType: "web",
+  //     }),
+  //   });
 
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`Failed to get SEO data: ${res.status} ${text}`);
-    }
+  //   if (!res.ok) {
+  //     const text = await res.text();
+  //     throw new Error(`Failed to get SEO data: ${res.status} ${text}`);
+  //   }
 
-    return res.json();
-  }
+  //   return res.json();
+  // }
 }

@@ -1,30 +1,25 @@
 import { IGoogleSiteVerificationService } from "@/lib/application/services/google-site-verification.service.interface";
-import { JWT } from "google-auth-library";
+import { google } from "googleapis";
 
 export class GoogleSiteVerificationService
   implements IGoogleSiteVerificationService {
-  private jwtClient: JWT;
+  private oauth2Client: any;
 
   constructor() {
-    const email = process.env.GOOGLE_SERVICE_CLIENT_EMAIL;
-    const key = process.env.GOOGLE_SERVICE_PRIVATE_KEY?.replace(/\\n/g, "\n");
-    const scopes = (process.env.GOOGLE_GSC_SCOPES ?? "https://www.googleapis.com/auth/webmasters")
-      .split(" ")
-      .filter(Boolean);
-
-    if (!email || !key) {
-      throw new Error("Missing Google Service Account credentials in env");
-    }
-
-    this.jwtClient = new JWT({ email, key, scopes });
+    this.oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI
+    );
+    this.oauth2Client.setCredentials({
+      refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+    });
   }
 
   private async getAccessToken(): Promise<string> {
-    const tokenResponse = await this.jwtClient.authorize();
-    if (!tokenResponse.access_token) {
-      throw new Error("Failed to get access token for Site Verification");
-    }
-    return tokenResponse.access_token;
+    const { token } = await this.oauth2Client.getAccessToken();
+    if (!token) throw new Error("Failed to get access token for Site Verification");
+    return token;
   }
 
   async requestVerificationToken(
